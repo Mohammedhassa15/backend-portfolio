@@ -2,12 +2,15 @@ from flask import Flask, request, jsonify
 import smtplib
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
+import os
 
 from flask_cors import CORS
 
 app = Flask(__name__)
 
 CORS(app,  origins=["https://my-port-folio-three-psi.vercel.app/"])
+EMAIL_ADDRESS = os.environ.get("EMAIL_ADDRESS", "mohammedhassan0041@gmail.com")
+EMAIL_PASSWORD = os.environ.get("EMAIL_PASSWORD", "zxxs prsc ubvk ffhv")
 
 # Replace with your Gmail credentials
 EMAIL_ADDRESS = "mohammedhassan0041@gmail.com"
