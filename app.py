@@ -7,7 +7,7 @@ from flask_cors import CORS
 
 app = Flask(__name__)
 
-CORS(app)
+CORS(app,  origins=["https://my-port-folio-three-psi.vercel.app/"])
 
 # Replace with your Gmail credentials
 EMAIL_ADDRESS = "mohammedhassan0041@gmail.com"
