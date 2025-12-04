@@ -8,21 +8,30 @@ from flask_cors import CORS
 
 app = Flask(__name__)
 
-CORS(app,  origins=["https://my-port-folio-three-psi.vercel.app"])
-EMAIL_ADDRESS = os.environ.get("EMAIL_ADDRESS", "mohammedhassan0041@gmail.com")
-EMAIL_PASSWORD = os.environ.get("EMAIL_PASSWORD", "zxxs prsc ubvk ffhv")
+# Allow your frontend
+CORS(app, resources={
+    r"/api/*": {
+        "origins": ["https://my-port-folio-three-psi.vercel.app"],
+        "methods": ["POST", "OPTIONS"],
+        "allow_headers": ["Content-Type"]
+    }
+})
 
+EMAIL_ADDRESS = "mohammedhassan0041@gmail.com"
+EMAIL_PASSWORD = "zxxs prsc ubvk ffhv"
 
-
-@app.route("/api/contact", methods=["POST"])
+@app.route("/api/contact", methods=["POST", "OPTIONS"])
 def contact():
+    if request.method == "OPTIONS":
+        # Preflight response
+        return jsonify({"message": "preflight ok"}), 200
+
     data = request.json
     name = data.get("name")
     email = data.get("email")
     message = data.get("message")
 
     try:
-        # Prepare email
         msg = MIMEMultipart()
         msg["From"] = EMAIL_ADDRESS
         msg["To"] = EMAIL_ADDRESS
@@ -31,18 +40,26 @@ def contact():
         body = f"Name: {name}\nEmail: {email}\n\nMessage:\n{message}"
         msg.attach(MIMEText(body, "plain"))
 
-        # Send email
         with smtplib.SMTP("smtp.gmail.com", 587) as server:
             server.starttls()
             server.login(EMAIL_ADDRESS, EMAIL_PASSWORD)
             server.send_message(msg)
 
         return jsonify({"status": "success"}), 200
+
     except Exception as e:
         print(e)
         return jsonify({"status": "error", "message": str(e)}), 500
-    
-    
+
+
 if __name__ == "__main__":
-    port = int(os.environ.get("PORT", 5000))
-    app.run(host="0.0.0.0", port=port)
+    app.run(debug=True)
+
+
+
+
+
+
+
+
+    '''zxxs prsc ubvk ffhv'''
