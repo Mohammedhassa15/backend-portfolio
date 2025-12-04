@@ -8,13 +8,11 @@ from flask_cors import CORS
 
 app = Flask(__name__)
 
-CORS(app,  origins=["https://my-port-folio-three-psi.vercel.app/"])
+CORS(app,  origins=["https://my-port-folio-three-psi.vercel.app"])
 EMAIL_ADDRESS = os.environ.get("EMAIL_ADDRESS", "mohammedhassan0041@gmail.com")
 EMAIL_PASSWORD = os.environ.get("EMAIL_PASSWORD", "zxxs prsc ubvk ffhv")
 
-# Replace with your Gmail credentials
-EMAIL_ADDRESS = "mohammedhassan0041@gmail.com"
-EMAIL_PASSWORD = "zxxs prsc ubvk ffhv"
+
 
 @app.route("/api/contact", methods=["POST"])
 def contact():
@@ -43,6 +41,8 @@ def contact():
     except Exception as e:
         print(e)
         return jsonify({"status": "error", "message": str(e)}), 500
-
+    
+    
 if __name__ == "__main__":
-    app.run(debug=True)
+    port = int(os.environ.get("PORT", 5000))
+    app.run(host="0.0.0.0", port=port)
