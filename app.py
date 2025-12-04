@@ -15,7 +15,7 @@ CORS(app, resources={
     }
 })
 
-RESEND_API_KEY = os.getenv("RESEND_API_KEY")
+RESEND_API_KEY = os.getenv("RESEND_API_KEY").strip()
 FROM_EMAIL = os.getenv("FROM_EMAIL", "onboarding@resend.dev")   # change to your verified domain email
 TO_EMAIL = os.getenv("TO_EMAIL", "mohammedhassan0041@gmail.com")
 
