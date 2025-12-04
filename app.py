@@ -1,10 +1,10 @@
 from flask import Flask, request, jsonify
 from flask_cors import CORS
 import os
+import requests
 
 app = Flask(__name__)
 
-# Allow your frontend
 CORS(app, resources={
     r"/api/*": {
         "origins": ["https://my-port-folio-three-psi.vercel.app"],
@@ -13,12 +13,12 @@ CORS(app, resources={
     }
 })
 
-# Load Resend API key
 RESEND_API_KEY = os.getenv("RESEND_API_KEY")
-resend = Resend(api_key=RESEND_API_KEY)
+FROM_EMAIL = "onboarding@resend.dev"   # change to your verified domain email
+TO_EMAIL = "mohammedhassan0041@gmail.com"
 
-@app.route("/api/contact-resend", methods=["POST", "OPTIONS"])
-def contact_resend():
+@app.route("/api/contact", methods=["POST", "OPTIONS"])
+def contact():
     if request.method == "OPTIONS":
         return jsonify({"message": "preflight ok"}), 200
 
@@ -27,24 +27,32 @@ def contact_resend():
     email = data.get("email")
     message = data.get("message")
 
+    payload = {
+        "from": f"Portfolio Contact <{FROM_EMAIL}>",
+        "to": [TO_EMAIL],
+        "subject": f"New Message From {name}",
+        "text": f"Name: {name}\nEmail: {email}\n\nMessage:\n{message}",
+    }
+
     try:
-        # Send with Resend
-        resend.emails.send(
-            from_="Portfolio Contact <onboarding@resend.dev>",
-            to=["mohammedhassan0041@gmail.com"],  # your inbox
-            subject=f"New Contact Message from {name}",
-            html=f"""
-                <h2>New Contact Form Submission</h2>
-                <p><strong>Name:</strong> {name}</p>
-                <p><strong>Email:</strong> {email}</p>
-                <p><strong>Message:</strong><br>{message}</p>
-            """
+        response = requests.post(
+            "https://api.resend.com/emails",
+            json=payload,
+            headers={
+                "Authorization": f"Bearer {RESEND_API_KEY}",
+                "Content-Type": "application/json"
+            }
         )
 
-        return jsonify({"status": "success"}), 200
+        if response.status_code == 200 or response.status_code == 202:
+            return jsonify({"status": "success"}), 200
+        else:
+            return jsonify({
+                "status": "error",
+                "message": response.text
+            }), 500
 
     except Exception as e:
-        print("Resend Error:", e)
         return jsonify({"status": "error", "message": str(e)}), 500
 
 
