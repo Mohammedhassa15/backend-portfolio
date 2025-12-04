@@ -1,10 +1,7 @@
 from flask import Flask, request, jsonify
-import smtplib
-from email.mime.text import MIMEText
-from email.mime.multipart import MIMEMultipart
-import os
-
 from flask_cors import CORS
+import os
+from resend import Resend
 
 app = Flask(__name__)
 
@@ -17,13 +14,13 @@ CORS(app, resources={
     }
 })
 
-EMAIL_ADDRESS = "mohammedhassan0041@gmail.com"
-EMAIL_PASSWORD = "zxxs prsc ubvk ffhv"
+# Load Resend API key
+RESEND_API_KEY = os.getenv("RESEND_API_KEY")
+resend = Resend(api_key=RESEND_API_KEY)
 
-@app.route("/api/contact", methods=["POST", "OPTIONS"])
-def contact():
+@app.route("/api/contact-resend", methods=["POST", "OPTIONS"])
+def contact_resend():
     if request.method == "OPTIONS":
-        # Preflight response
         return jsonify({"message": "preflight ok"}), 200
 
     data = request.json
@@ -32,34 +29,25 @@ def contact():
     message = data.get("message")
 
     try:
-        msg = MIMEMultipart()
-        msg["From"] = EMAIL_ADDRESS
-        msg["To"] = EMAIL_ADDRESS
-        msg["Subject"] = f"New Contact Message from {name}"
-
-        body = f"Name: {name}\nEmail: {email}\n\nMessage:\n{message}"
-        msg.attach(MIMEText(body, "plain"))
-
-        with smtplib.SMTP("smtp.gmail.com", 587) as server:
-            server.starttls()
-            server.login(EMAIL_ADDRESS, EMAIL_PASSWORD)
-            server.send_message(msg)
+        # Send with Resend
+        resend.emails.send(
+            from_="Portfolio Contact <onboarding@resend.dev>",
+            to=["mohammedhassan0041@gmail.com"],  # your inbox
+            subject=f"New Contact Message from {name}",
+            html=f"""
+                <h2>New Contact Form Submission</h2>
+                <p><strong>Name:</strong> {name}</p>
+                <p><strong>Email:</strong> {email}</p>
+                <p><strong>Message:</strong><br>{message}</p>
+            """
+        )
 
         return jsonify({"status": "success"}), 200
 
     except Exception as e:
-        print(e)
+        print("Resend Error:", e)
         return jsonify({"status": "error", "message": str(e)}), 500
 
 
 if __name__ == "__main__":
     app.run(debug=True)
-
-
-
-
-
-
-
-
-    '''zxxs prsc ubvk ffhv'''
