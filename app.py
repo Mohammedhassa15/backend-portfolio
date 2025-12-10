@@ -6,17 +6,17 @@ import sys
 
 app = Flask(__name__)
 
-# Allow the frontend origin(s) you expect. Add localhost for testing if needed.
+# Full CORS rules — includes OPTIONS preflight, GET (for health), POST
 CORS(app, resources={
     r"/api/*": {
         "origins": ["https://my-port-folio-three-psi.vercel.app"],
-        "methods": ["POST", "OPTIONS"],
-        "allow_headers": ["Content-Type"]
+        "methods": ["GET", "POST", "OPTIONS"],
+        "allow_headers": ["Content-Type", "Authorization"]
     }
 })
 
-RESEND_API_KEY = os.getenv("RESEND_API_KEY").strip()
-FROM_EMAIL = os.getenv("FROM_EMAIL", "onboarding@resend.dev")   # change to your verified domain email
+RESEND_API_KEY = os.getenv("RESEND_API_KEY")
+FROM_EMAIL = os.getenv("FROM_EMAIL", "onboarding@resend.dev")
 TO_EMAIL = os.getenv("TO_EMAIL", "mohammedhassan0041@gmail.com")
 
 
@@ -25,22 +25,27 @@ def index():
     return jsonify({"status": "ok", "message": "Backend running"}), 200
 
 
+# Health endpoint for uptime monitor (Render Free Tier fix)
+@app.route("/api/health", methods=["GET"])
+def health():
+    return jsonify({"status": "alive"}), 200
+
+
 @app.route("/api/contact", methods=["POST", "OPTIONS"])
 def contact():
+    # Crucial for CORS preflight on Render
     if request.method == "OPTIONS":
-        return jsonify({"message": "preflight ok"}), 200
+        return "", 200
 
     data = request.get_json(silent=True) or {}
     name = data.get("name")
     email = data.get("email")
     message = data.get("message")
 
-    # Basic validation
     if not name or not email or not message:
         return jsonify({"status": "error", "message": "name, email and message are required"}), 400
 
     if not RESEND_API_KEY:
-        # Clear diagnostic for logs so you don't have to read a stacktrace later
         msg = "RESEND_API_KEY not set in environment"
         print(msg, file=sys.stderr)
         return jsonify({"status": "error", "message": msg}), 500
@@ -63,17 +68,15 @@ def contact():
             timeout=10
         )
 
-        # Log for debugging on Render
         print(f"resend status={response.status_code} body={response.text}", file=sys.stderr)
 
-        if 200 <= response.status_code < 300:
+        if response.ok:
             return jsonify({"status": "success"}), 200
-        else:
-            # Forward the upstream error message and status code
-            return jsonify({
-                "status": "error",
-                "message": response.text
-            }), max(response.status_code, 500)
+
+        return jsonify({
+            "status": "error",
+            "message": response.text
+        }), max(response.status_code, 500)
 
     except Exception as e:
         print(f"exception sending email: {e}", file=sys.stderr)
@@ -81,6 +84,5 @@ def contact():
 
 
 if __name__ == "__main__":
-    # Bind to the port provided by Render (or default 5000 locally)
     port = int(os.environ.get("PORT", 5000))
-    app.run(host="0.0.0.0", port=port, debug=True)
+    app.run(host="0.0.0.0", port=port)
